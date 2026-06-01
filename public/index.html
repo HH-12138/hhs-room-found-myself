@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="HH's ROOM: Found Myself - 一个关于真实、观察、迭代的个人网站。"
+    />
+    <link rel="canonical" href="https://hhs-room.com/" />
+    <title>HH's ROOM: Found Myself</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="#top" aria-label="回到首页">
+          <span class="brand-mark">HH</span>
+          <span>
+            <strong>HH's ROOM</strong>
+            <small>Found Myself</small>
+          </span>
+        </a>
+        <nav aria-label="主要导航">
+          <a href="#now">最近</a>
+          <a href="#modules">目录</a>
+          <a href="#contact">交流</a>
+          <button type="button" class="auth-button" id="authButton">退出</button>
+        </nav>
+      </header>
+
+      <main id="top">
+        <section class="hero section-card">
+          <p class="eyebrow">Personal archive / living lab / soft notes</p>
+          <div class="hero-grid">
+            <div>
+              <h1>HH's ROOM:<br />Found Myself</h1>
+              <p class="handwritten-note">still in progress</p>
+              <p class="hero-line">真实、观察、迭代</p>
+            </div>
+            <aside class="hero-note" aria-label="网站说明">
+              <span>这里没有完成的答案</span>
+              <p>
+                更像一间持续整理的房间：把身体、关系、生活采样、产品实践和成长轨迹放进同一个观察系统
+              </p>
+            </aside>
+          </div>
+        </section>
+
+        <section class="section-card now-section" id="now">
+          <div class="section-heading">
+            <p class="eyebrow">Now studying</p>
+            <h2>最近在研究什么</h2>
+            <p class="handwritten-note">currently obsessed with...</p>
+          </div>
+          <div class="research-list" id="nowStudyingList"></div>
+          <button type="button" class="research-add" id="addResearchBtn">
+            + 添加一条研究
+          </button>
+        </section>
+
+        <section class="modules section-card" id="modules" aria-label="网站目录">
+          <div class="room-index">
+            <div>
+              <p class="eyebrow">Room index</p>
+              <h2>观察房间的不同部分</h2>
+            </div>
+            <div class="index-list" id="indexList"></div>
+          </div>
+          <div class="module-grid" id="moduleGrid"></div>
+        </section>
+      </main>
+
+      <footer class="contact-section" id="contact">
+        <div class="contact-box">
+          <p class="eyebrow">Contact</p>
+          <h2>交流</h2>
+          <p>Wechat：15988824266</p>
+          <p>E-mail：shiahoo@outlook.com</p>
+        </div>
+        <a href="#top">回到顶部</a>
+      </footer>
+    </div>
+
+    <div class="module-editor" id="moduleEditor" hidden aria-hidden="true">
+      <div class="module-editor-backdrop" id="editorBackdrop"></div>
+      <div
+        class="module-editor-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="editorTitle"
+      >
+        <header class="editor-header">
+          <div>
+            <p class="eyebrow" id="editorNumber"></p>
+            <h2 id="editorTitle"></h2>
+            <p class="handwritten-note" id="editorNote"></p>
+          </div>
+          <button type="button" class="editor-close" id="editorClose" aria-label="关闭">
+            关闭
+          </button>
+        </header>
+
+        <div id="editorNotesMode">
+          <label class="editor-label" for="editorInput">写下你的观察</label>
+          <textarea
+            id="editorInput"
+            rows="6"
+            placeholder="在这里记录……"
+          ></textarea>
+          <div class="editor-actions">
+            <button type="button" class="editor-save" id="editorSave">保存记录</button>
+          </div>
+
+          <div id="editorImageSection" hidden>
+            <label class="editor-label" for="editorImageInput">上传图片</label>
+            <input id="editorImageInput" type="file" accept="image/*" />
+            <div class="editor-images" id="editorImages"></div>
+          </div>
+
+          <div class="editor-entries" id="editorEntries"></div>
+        </div>
+
+        <div id="editorResearchMode" hidden>
+          <label class="editor-label" for="editorResearchTag">标签</label>
+          <input
+            id="editorResearchTag"
+            type="text"
+            placeholder="例如：Vibe Coding / 生活 / 关系"
+          />
+          <label class="editor-label" for="editorResearchTitle">研究主题</label>
+          <input
+            id="editorResearchTitle"
+            type="text"
+            placeholder="最近在研究什么？"
+          />
+          <label class="editor-label" for="editorResearchDesc">简介</label>
+          <textarea
+            id="editorResearchDesc"
+            rows="4"
+            placeholder="用一两句话描述这项研究……"
+          ></textarea>
+          <div class="editor-actions">
+            <button type="button" class="editor-save" id="editorResearchSave">
+              添加研究
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="module-editor" id="loginModal" hidden aria-hidden="true">
+      <div class="module-editor-backdrop" id="loginBackdrop"></div>
+      <div class="module-editor-panel login-panel" role="dialog" aria-modal="true">
+        <header class="editor-header">
+          <div>
+            <p class="eyebrow">Owner access</p>
+            <h2>登录后可编辑</h2>
+          </div>
+          <button type="button" class="editor-close" id="loginClose" aria-label="关闭">
+            关闭
+          </button>
+        </header>
+        <label class="editor-label" for="loginPassword">管理密码</label>
+        <input id="loginPassword" type="password" placeholder="输入你的个人密码" />
+        <p class="login-error" id="loginError" hidden></p>
+        <div class="editor-actions">
+          <button type="button" class="editor-save" id="loginSubmit">登录</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./api.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

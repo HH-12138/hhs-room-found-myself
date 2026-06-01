@@ -1,0 +1,38 @@
+你已经知道这个个人网站的上下文。下面只是展示当前这版代码里的新增设计细节，不需要你优化，也不需要你改代码。
+
+当前新增内容：少量手写元素，以及第二辅助色。
+
+1. index.html
+- Google Fonts 已增加 Caveat 字体。
+- 首页标题 HH's ROOM: Found Myself 下方有手写小字：still in progress
+- “最近在研究什么”标题下方有手写小字：currently obsessed with...
+
+2. script.js
+modules 数据里已增加 note 字段：
+- 身体观察室：the body always knows
+- 人与人的连接：between you and me
+- 生活采样：collected moments
+- Vibe Coding 日志：idea → prototype → repeat
+- 成长轨迹：still becoming
+
+模块卡片渲染方式：
+- 标题区域使用 module-title-row。
+- module-title-row 里包含 h3 和可选的 handwritten-note。
+- 如果 item.note 存在，就显示在模块标题旁边。
+
+3. styles.css
+- 新增 CSS 变量：--accent-secondary: #3c506b;
+- 新增 .handwritten-note 样式，使用 Caveat 或 cursive 字体，颜色用 --accent-secondary。
+- .hero h1 + .handwritten-note 有很小的上边距。
+- .section-heading .handwritten-note 有适当上边距。
+- .module-title-row 使用 flex，允许换行，并和标题 baseline 对齐。
+
+4. --accent-secondary 当前用于：
+- nav hover
+- index item hover/border
+- index item 编号
+- 项目链接按钮
+- footer link
+- timeline 线条、圆点、年份
+
+整体原则：手写元素保持克制，像轻轻写在页面旁边的铅笔备注。
