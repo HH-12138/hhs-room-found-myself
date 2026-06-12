@@ -334,6 +334,36 @@ footer p {
   box-shadow: 0 20px 50px rgba(45, 41, 37, 0.28);
 }
 
+.research-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.research-card-top .tag {
+  margin-bottom: 0;
+}
+
+.research-delete {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  color: rgba(255, 250, 242, 0.68);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(255, 250, 242, 0.08);
+  border: 1px solid rgba(255, 250, 242, 0.16);
+  border-radius: 999px;
+}
+
+.research-delete:hover {
+  color: #fffaf2;
+  background: rgba(255, 250, 242, 0.16);
+}
+
 .research-hint {
   margin: 18px 0 0 !important;
   color: rgba(255, 250, 242, 0.55) !important;
@@ -498,6 +528,19 @@ footer p {
   font-weight: 600;
 }
 
+.module-preview {
+  grid-column: 2;
+  display: -webkit-box;
+  max-width: 62ch;
+  margin: 0 !important;
+  overflow: hidden;
+  color: var(--muted) !important;
+  font-size: 0.92rem;
+  line-height: 1.75;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .module-entry-count {
   grid-column: 2;
   width: fit-content;
@@ -530,6 +573,10 @@ footer p {
 .module-entry-count,
 .module-images-wrap {
   grid-column: 2;
+}
+
+.module-images-wrap {
+  min-height: 0;
 }
 
 .module-title-row {
@@ -709,11 +756,6 @@ footer p {
   font-weight: 700;
 }
 
-.module-images-wrap {
-  grid-column: 2;
-  min-height: 0;
-}
-
 .module-images {
   display: flex;
   flex-wrap: wrap;
@@ -862,23 +904,39 @@ body.editor-open {
 
 .editor-actions {
   display: flex;
+  gap: 10px;
   justify-content: flex-end;
 }
 
-.editor-save {
+.editor-save,
+.editor-cancel {
   padding: 10px 16px;
-  color: #fffaf2;
   font: inherit;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
+  border-radius: 999px;
+}
+
+.editor-save {
+  color: #fffaf2;
   background: var(--accent-secondary);
   border: 0;
-  border-radius: 999px;
 }
 
 .editor-save:hover {
   background: var(--ink);
+}
+
+.editor-cancel {
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.editor-cancel:hover {
+  color: var(--accent-secondary);
+  border-color: rgba(60, 80, 107, 0.28);
 }
 
 .editor-entries {
@@ -909,12 +967,19 @@ body.editor-open {
   margin-bottom: 8px;
 }
 
+.editor-entry-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
 .editor-entry-meta time {
   color: var(--accent-secondary);
   font-size: 0.82rem;
   font-weight: 700;
 }
 
+.editor-edit,
 .editor-delete {
   padding: 4px 8px;
   color: var(--muted);
@@ -925,6 +990,7 @@ body.editor-open {
   border: 0;
 }
 
+.editor-edit:hover,
 .editor-delete:hover {
   color: var(--accent-secondary);
 }

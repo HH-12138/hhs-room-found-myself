@@ -73,6 +73,24 @@ function createModuleEntry(moduleId, text) {
   return { id, text, createdAt };
 }
 
+function updateModuleEntry(moduleId, entryId, text) {
+  const changes = db
+    .prepare(`UPDATE module_entries SET text = ? WHERE module_id = ? AND id = ?`)
+    .run(text, moduleId, entryId).changes;
+
+  if (!changes) {
+    return null;
+  }
+
+  return db
+    .prepare(
+      `SELECT id, text, created_at AS createdAt
+       FROM module_entries
+       WHERE module_id = ? AND id = ?`,
+    )
+    .get(moduleId, entryId);
+}
+
 function deleteModuleEntry(moduleId, entryId) {
   return db
     .prepare(`DELETE FROM module_entries WHERE module_id = ? AND id = ?`)
@@ -98,6 +116,19 @@ function createResearchTopic({ id, tag, title, description, createdAt }) {
   return { id, tag, title, description, createdAt };
 }
 
+function deleteResearchTopic(topicId) {
+  return db.transaction(() => {
+    const changes = db.prepare(`DELETE FROM research_topics WHERE id = ?`).run(topicId)
+      .changes;
+
+    if (changes) {
+      db.prepare(`DELETE FROM research_entries WHERE topic_id = ?`).run(topicId);
+    }
+
+    return changes;
+  })();
+}
+
 function listResearchEntries(topicId) {
   return db
     .prepare(
@@ -119,6 +150,24 @@ function createResearchEntry(topicId, text) {
   ).run(id, topicId, text, createdAt);
 
   return { id, text, createdAt };
+}
+
+function updateResearchEntry(topicId, entryId, text) {
+  const changes = db
+    .prepare(`UPDATE research_entries SET text = ? WHERE topic_id = ? AND id = ?`)
+    .run(text, topicId, entryId).changes;
+
+  if (!changes) {
+    return null;
+  }
+
+  return db
+    .prepare(
+      `SELECT id, text, created_at AS createdAt
+       FROM research_entries
+       WHERE topic_id = ? AND id = ?`,
+    )
+    .get(topicId, entryId);
 }
 
 function deleteResearchEntry(topicId, entryId) {
@@ -187,11 +236,14 @@ function deleteModuleImage(moduleId, imageId) {
 module.exports = {
   listModuleEntries,
   createModuleEntry,
+  updateModuleEntry,
   deleteModuleEntry,
   listResearchTopics,
   createResearchTopic,
+  deleteResearchTopic,
   listResearchEntries,
   createResearchEntry,
+  updateResearchEntry,
   deleteResearchEntry,
   getEntryCounts,
   listModuleImages,

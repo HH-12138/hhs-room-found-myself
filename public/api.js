@@ -43,6 +43,13 @@ const API = {
     });
   },
 
+  updateModuleEntry(moduleId, entryId, text) {
+    return this.request(`/api/modules/${moduleId}/entries/${entryId}`, {
+      method: "PUT",
+      body: JSON.stringify({ text }),
+    });
+  },
+
   deleteModuleEntry(moduleId, entryId) {
     return this.request(`/api/modules/${moduleId}/entries/${entryId}`, {
       method: "DELETE",
@@ -79,9 +86,22 @@ const API = {
     });
   },
 
+  deleteResearchTopic(topicId) {
+    return this.request(`/api/research/topics/${topicId}`, {
+      method: "DELETE",
+    });
+  },
+
   createResearchEntry(topicId, text) {
     return this.request(`/api/research/${topicId}/entries`, {
       method: "POST",
+      body: JSON.stringify({ text }),
+    });
+  },
+
+  updateResearchEntry(topicId, entryId, text) {
+    return this.request(`/api/research/${topicId}/entries/${entryId}`, {
+      method: "PUT",
       body: JSON.stringify({ text }),
     });
   },

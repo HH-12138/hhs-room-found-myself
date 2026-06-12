@@ -84,10 +84,19 @@ const loginSubmit = document.querySelector("#loginSubmit");
 
 let activeModule = null;
 let isAuthenticated = false;
+let isStaticMode = false;
 let entryCounts = {};
 let customResearchTopics = [];
 let latestEntries = {};
 let moduleImages = {};
+let activeEditingEntryId = null;
+
+const editorCancelEdit = document.createElement("button");
+editorCancelEdit.type = "button";
+editorCancelEdit.className = "editor-cancel";
+editorCancelEdit.textContent = "取消修改";
+editorCancelEdit.hidden = true;
+editorSave.insertAdjacentElement("beforebegin", editorCancelEdit);
 
 function getAllResearchTopics() {
   return [...defaultResearchTopics, ...customResearchTopics];
@@ -122,13 +131,41 @@ function entryCount(id) {
   return entryCounts[id] || 0;
 }
 
+function setEditingEntry(entry) {
+  activeEditingEntryId = entry.id;
+  editorInput.value = entry.text;
+  editorSave.textContent = "保存修改";
+  editorCancelEdit.hidden = false;
+  editorInput.focus();
+}
+
+function clearEditingState() {
+  activeEditingEntryId = null;
+  editorSave.textContent = "保存记录";
+  editorCancelEdit.hidden = true;
+}
+
 async function refreshSiteData() {
-  const data = await API.getSiteData();
-  entryCounts = data.entryCounts || {};
-  customResearchTopics = data.customResearchTopics || [];
+  if (isStaticMode) {
+    entryCounts = {};
+    customResearchTopics = [];
+    return;
+  }
+
+  try {
+    const data = await API.getSiteData();
+    entryCounts = data.entryCounts || {};
+    customResearchTopics = data.customResearchTopics || [];
+  } catch (_error) {
+    isStaticMode = true;
+    entryCounts = {};
+    customResearchTopics = [];
+  }
 }
 
 function updateAuthButton() {
+  authButton.hidden = isStaticMode;
+  addResearchBtn.hidden = isStaticMode;
   authButton.textContent = isAuthenticated ? "退出" : "登录";
 }
 
@@ -150,8 +187,14 @@ function closeLogin() {
 }
 
 async function checkAuth() {
-  const status = await API.authStatus();
-  isAuthenticated = Boolean(status.authenticated);
+  try {
+    const status = await API.authStatus();
+    isAuthenticated = Boolean(status.authenticated);
+  } catch (_error) {
+    isStaticMode = true;
+    isAuthenticated = false;
+  }
+
   updateAuthButton();
 }
 
@@ -180,6 +223,11 @@ async function handleLoginSubmit() {
 }
 
 function requireAuthOrLogin() {
+  if (isStaticMode) {
+    alert("当前是静态展示版，只能浏览内容，不能在线增改。");
+    return false;
+  }
+
   if (isAuthenticated) {
     return true;
   }
@@ -193,11 +241,19 @@ async function loadEntriesForActiveModule() {
     return [];
   }
 
-  if (activeModule.scope === "research") {
-    return API.getResearchEntries(activeModule.number);
+  if (isStaticMode) {
+    return [];
   }
 
-  return API.getModuleEntries(activeModule.number);
+  try {
+    if (activeModule.scope === "research") {
+      return API.getResearchEntries(activeModule.number);
+    }
+
+    return API.getModuleEntries(activeModule.number);
+  } catch (_error) {
+    return [];
+  }
 }
 
 function renderEntriesList(entries) {
@@ -218,6 +274,15 @@ function renderEntriesList(entries) {
       const time = document.createElement("time");
       time.textContent = formatDate(entry.createdAt);
 
+      const actions = document.createElement("div");
+      actions.className = "editor-entry-actions";
+
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "editor-edit";
+      editButton.dataset.editId = entry.id;
+      editButton.textContent = "编辑";
+
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
       deleteButton.className = "editor-delete";
@@ -227,7 +292,8 @@ function renderEntriesList(entries) {
       const text = document.createElement("p");
       text.textContent = entry.text;
 
-      meta.append(time, deleteButton);
+      actions.append(editButton, deleteButton);
+      meta.append(time, actions);
       article.append(meta, text);
       return article.outerHTML;
     })
@@ -253,13 +319,18 @@ function renderImageGallery(images) {
 }
 
 async function loadModuleImages(moduleId) {
-  if (!IMAGE_MODULES.has(moduleId)) {
+  if (isStaticMode || !IMAGE_MODULES.has(moduleId)) {
     return [];
   }
 
-  const images = await API.getModuleImages(moduleId);
-  moduleImages[moduleId] = images;
-  return images;
+  try {
+    const images = await API.getModuleImages(moduleId);
+    moduleImages[moduleId] = images;
+    return images;
+  } catch (_error) {
+    moduleImages[moduleId] = [];
+    return [];
+  }
 }
 
 async function renderEntries() {
@@ -292,6 +363,15 @@ function renderModuleCardImages(moduleId) {
   `;
 }
 
+function renderModuleCardPreview(moduleId) {
+  const latest = latestEntries[moduleId]?.[0];
+  if (!latest) {
+    return "";
+  }
+
+  return `最近：${escapeHtml(latest.text)}`;
+}
+
 function updateModuleBadges() {
   document.querySelectorAll(".module-card").forEach((card) => {
     const number = card.dataset.module;
@@ -309,6 +389,12 @@ function updateModuleBadges() {
     if (imagesWrap) {
       imagesWrap.innerHTML = renderModuleCardImages(number);
     }
+
+    const preview = card.querySelector(".module-preview");
+    if (preview) {
+      preview.innerHTML = renderModuleCardPreview(number);
+      preview.hidden = !preview.innerHTML;
+    }
   });
 }
 
@@ -320,6 +406,10 @@ function renderNowSection() {
       const latestPreview = latest
         ? `<p class="research-latest">${escapeHtml(latest.text)}</p>`
         : "";
+      const deleteButton =
+        isAuthenticated && !topic.builtIn
+          ? `<button type="button" class="research-delete" data-research-delete="${escapeHtml(topic.id)}">删除主题</button>`
+          : "";
 
       return `
         <article
@@ -329,7 +419,10 @@ function renderNowSection() {
           tabindex="0"
           aria-label="打开 ${escapeHtml(topic.title)} 的记录"
         >
-          <span class="tag">${escapeHtml(topic.tag || "Research")}</span>
+          <div class="research-card-top">
+            <span class="tag">${escapeHtml(topic.tag || "Research")}</span>
+            ${deleteButton}
+          </div>
           <h3>${escapeHtml(topic.title)}</h3>
           <p class="research-description">${escapeHtml(topic.description)}</p>
           ${latestPreview}
@@ -344,10 +437,18 @@ function renderNowSection() {
 }
 
 async function preloadResearchPreviews() {
+  if (isStaticMode) {
+    return;
+  }
+
   await Promise.all(
     getAllResearchTopics().map(async (topic) => {
       if (entryCount(topic.id) > 0) {
-        latestEntries[topic.id] = await API.getResearchEntries(topic.id);
+        try {
+          latestEntries[topic.id] = await API.getResearchEntries(topic.id);
+        } catch (_error) {
+          latestEntries[topic.id] = [];
+        }
       }
     }),
   );
@@ -363,17 +464,50 @@ async function preloadModuleImages() {
   );
 }
 
+async function preloadModulePreviews() {
+  if (isStaticMode) {
+    return;
+  }
+
+  await Promise.all(
+    modules.map(async (item) => {
+      if (entryCount(item.number) > 0) {
+        try {
+          latestEntries[item.number] = await API.getModuleEntries(item.number);
+        } catch (_error) {
+          latestEntries[item.number] = [];
+        }
+      }
+    }),
+  );
+}
+
 function bindResearchCards() {
   document.querySelectorAll("[data-research-id]").forEach((element) => {
-    element.addEventListener("click", () => {
+    element.addEventListener("click", (event) => {
+      if (event.target.closest("[data-research-delete]")) {
+        return;
+      }
+
       openResearchNotes(element.dataset.researchId);
     });
 
     element.addEventListener("keydown", (event) => {
+      if (event.target.closest("[data-research-delete]")) {
+        return;
+      }
+
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         openResearchNotes(element.dataset.researchId);
       }
+    });
+  });
+
+  document.querySelectorAll("[data-research-delete]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      handleDeleteResearchTopic(button.dataset.researchDelete);
     });
   });
 }
@@ -402,6 +536,7 @@ async function openResearchNotes(researchId) {
   editorTitle.textContent = topic.title;
   editorNote.hidden = true;
   editorImageSection.hidden = true;
+  clearEditingState();
   editorInput.value = "";
   editorInput.placeholder = activeModule.placeholder;
 
@@ -447,6 +582,7 @@ async function openEditor(number) {
   editorNote.hidden = !target.note;
   editorImageSection.hidden = !target.allowsImages;
   editorImageInput.value = "";
+  clearEditingState();
   editorInput.value = "";
   editorInput.placeholder = target.placeholder;
 
@@ -460,6 +596,7 @@ function closeEditor() {
   moduleEditor.hidden = true;
   moduleEditor.setAttribute("aria-hidden", "true");
   document.body.classList.remove("editor-open");
+  clearEditingState();
   setEditorMode("notes");
   updateModuleBadges();
   renderNowSection();
@@ -473,13 +610,18 @@ async function handleSave() {
   if (!text) return;
 
   try {
-    if (activeModule.scope === "research") {
+    if (activeEditingEntryId && activeModule.scope === "research") {
+      await API.updateResearchEntry(activeModule.number, activeEditingEntryId, text);
+    } else if (activeEditingEntryId) {
+      await API.updateModuleEntry(activeModule.number, activeEditingEntryId, text);
+    } else if (activeModule.scope === "research") {
       await API.createResearchEntry(activeModule.number, text);
     } else {
       await API.createModuleEntry(activeModule.number, text);
     }
 
     editorInput.value = "";
+    clearEditingState();
     await refreshSiteData();
     await renderEntries();
     updateModuleBadges();
@@ -518,6 +660,41 @@ async function handleAddResearch() {
   }
 }
 
+async function handleDeleteResearchTopic(topicId) {
+  const topic = customResearchTopics.find((item) => item.id === topicId);
+  if (!topic || !requireAuthOrLogin()) return;
+
+  const confirmed = window.confirm(
+    `确定删除「${topic.title}」吗？这个主题下的所有记录也会一起删除。`,
+  );
+  if (!confirmed) return;
+
+  try {
+    await API.deleteResearchTopic(topicId);
+    delete latestEntries[topicId];
+    await refreshSiteData();
+    renderNowSection();
+  } catch (error) {
+    if (error.status === 401) {
+      openLogin();
+      return;
+    }
+
+    alert(error.message);
+  }
+}
+
+function handleEdit(entryId) {
+  if (!activeModule || activeModule.mode !== "notes") return;
+
+  const entry = (latestEntries[activeModule.number] || []).find(
+    (item) => item.id === entryId,
+  );
+  if (entry) {
+    setEditingEntry(entry);
+  }
+}
+
 async function handleDelete(entryId) {
   if (!activeModule || activeModule.mode !== "notes") return;
   if (!requireAuthOrLogin()) return;
@@ -527,6 +704,11 @@ async function handleDelete(entryId) {
       await API.deleteResearchEntry(activeModule.number, entryId);
     } else {
       await API.deleteModuleEntry(activeModule.number, entryId);
+    }
+
+    if (entryId === activeEditingEntryId) {
+      editorInput.value = "";
+      clearEditingState();
     }
 
     await refreshSiteData();
@@ -626,6 +808,7 @@ moduleGrid.innerHTML = modules
           <h3>${item.title}</h3>
           ${item.note ? `<span class="handwritten-note">${item.note}</span>` : ""}
         </div>
+        <p class="module-preview" hidden></p>
         <div class="module-images-wrap">${renderModuleCardImages(item.number)}</div>
         <p class="module-hint">点击开始记录</p>
         <span class="module-entry-count" hidden></span>
@@ -659,6 +842,10 @@ loginClose.addEventListener("click", closeLogin);
 loginBackdrop.addEventListener("click", closeLogin);
 loginSubmit.addEventListener("click", handleLoginSubmit);
 editorImageInput.addEventListener("change", handleImageUpload);
+editorCancelEdit.addEventListener("click", () => {
+  editorInput.value = "";
+  clearEditingState();
+});
 
 loginPassword.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -668,9 +855,15 @@ loginPassword.addEventListener("keydown", (event) => {
 });
 
 editorEntries.addEventListener("click", (event) => {
-  const button = event.target.closest(".editor-delete");
-  if (button) {
-    handleDelete(button.dataset.id);
+  const editButton = event.target.closest("[data-edit-id]");
+  if (editButton) {
+    handleEdit(editButton.dataset.editId);
+    return;
+  }
+
+  const deleteButton = event.target.closest(".editor-delete");
+  if (deleteButton) {
+    handleDelete(deleteButton.dataset.id);
   }
 });
 
@@ -705,6 +898,7 @@ async function initApp() {
   await checkAuth();
   await refreshSiteData();
   await preloadResearchPreviews();
+  await preloadModulePreviews();
   await preloadModuleImages();
   updateModuleBadges();
   renderNowSection();

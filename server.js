@@ -113,6 +113,28 @@ app.post("/api/modules/:moduleId/entries", requireAuth, (req, res) => {
   res.status(201).json(entry);
 });
 
+app.put("/api/modules/:moduleId/entries/:entryId", requireAuth, (req, res) => {
+  const text = String(req.body?.text || "").trim();
+
+  if (!text) {
+    res.status(400).json({ error: "内容不能为空。" });
+    return;
+  }
+
+  const entry = db.updateModuleEntry(
+    req.params.moduleId,
+    req.params.entryId,
+    text,
+  );
+
+  if (!entry) {
+    res.status(404).json({ error: "记录不存在。" });
+    return;
+  }
+
+  res.json(entry);
+});
+
 app.delete("/api/modules/:moduleId/entries/:entryId", requireAuth, (req, res) => {
   const changes = db.deleteModuleEntry(req.params.moduleId, req.params.entryId);
 
@@ -212,6 +234,17 @@ app.post("/api/research/topics", requireAuth, (req, res) => {
   res.status(201).json(topic);
 });
 
+app.delete("/api/research/topics/:topicId", requireAuth, (req, res) => {
+  const changes = db.deleteResearchTopic(req.params.topicId);
+
+  if (!changes) {
+    res.status(404).json({ error: "研究主题不存在。" });
+    return;
+  }
+
+  res.status(204).send();
+});
+
 app.post("/api/research/:topicId/entries", requireAuth, (req, res) => {
   const text = String(req.body?.text || "").trim();
 
@@ -222,6 +255,28 @@ app.post("/api/research/:topicId/entries", requireAuth, (req, res) => {
 
   const entry = db.createResearchEntry(req.params.topicId, text);
   res.status(201).json(entry);
+});
+
+app.put("/api/research/:topicId/entries/:entryId", requireAuth, (req, res) => {
+  const text = String(req.body?.text || "").trim();
+
+  if (!text) {
+    res.status(400).json({ error: "内容不能为空。" });
+    return;
+  }
+
+  const entry = db.updateResearchEntry(
+    req.params.topicId,
+    req.params.entryId,
+    text,
+  );
+
+  if (!entry) {
+    res.status(404).json({ error: "记录不存在。" });
+    return;
+  }
+
+  res.json(entry);
 });
 
 app.delete("/api/research/:topicId/entries/:entryId", requireAuth, (req, res) => {
