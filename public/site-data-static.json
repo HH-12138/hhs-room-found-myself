@@ -1,11 +1,16 @@
 {
-  "generatedAt": "2026-06-12T09:36:58.356Z",
+  "generatedAt": "2026-06-12T09:38:25.926Z",
   "entryCounts": {
-    "01": 1
+    "01": 2
   },
   "customResearchTopics": [],
   "moduleEntries": {
     "01": [
+      {
+        "id": "entry-1781257098920-an1v43",
+        "text": "持续多天的游泳学习，让身体比较疲惫",
+        "createdAt": "2026-06-12T09:38:18.920Z"
+      },
       {
         "id": "entry-1781257000791-u6rlvi",
         "text": "最近游泳后皮肤比较干燥，制作了精油进行涂抹",
