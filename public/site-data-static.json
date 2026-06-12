@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-06-12T09:34:35.047Z",
+  "entryCounts": {
+    "01": 1
+  },
+  "customResearchTopics": [],
+  "moduleEntries": {
+    "01": [
+      {
+        "id": "entry-1780322818808-pfxa4d",
+        "text": "测试后端记录",
+        "createdAt": "2026-06-01T14:06:58.808Z"
+      }
+    ],
+    "02": [],
+    "03": [],
+    "04": [],
+    "05": []
+  },
+  "moduleImages": {
+    "01": [],
+    "02": [],
+    "03": [],
+    "04": [],
+    "05": []
+  },
+  "researchEntries": {
+    "research-default": []
+  }
+}

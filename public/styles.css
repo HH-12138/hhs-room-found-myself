@@ -995,6 +995,12 @@ body.editor-open {
   color: var(--accent-secondary);
 }
 
+.static-mode .editor-label[for="editorInput"],
+.static-mode #editorInput,
+.static-mode .editor-actions {
+  display: none;
+}
+
 .editor-entry p {
   margin: 0;
   color: var(--ink);

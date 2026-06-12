@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "export:static": "node scripts/export-static.js",
+    "sync:pages": "npm run export:static && git add public/site-data-static.json public/uploads && (git diff --cached --quiet && echo \"No public changes to sync\" || git commit -m \"Update public site content\") && git push"
   },
   "engines": {
     "node": ">=18"

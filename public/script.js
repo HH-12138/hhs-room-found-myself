@@ -90,6 +90,7 @@ let customResearchTopics = [];
 let latestEntries = {};
 let moduleImages = {};
 let activeEditingEntryId = null;
+let staticSiteData = null;
 
 const editorCancelEdit = document.createElement("button");
 editorCancelEdit.type = "button";
@@ -145,10 +146,44 @@ function clearEditingState() {
   editorCancelEdit.hidden = true;
 }
 
+async function loadStaticSiteData() {
+  if (staticSiteData) {
+    return staticSiteData;
+  }
+
+  try {
+    const response = await fetch("./site-data-static.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("No static data");
+    }
+
+    staticSiteData = await response.json();
+  } catch (_error) {
+    staticSiteData = {
+      entryCounts: {},
+      customResearchTopics: [],
+      moduleEntries: {},
+      moduleImages: {},
+      researchEntries: {},
+    };
+  }
+
+  return staticSiteData;
+}
+
+function applyStaticSiteData(data) {
+  entryCounts = data.entryCounts || {};
+  customResearchTopics = data.customResearchTopics || [];
+  latestEntries = {
+    ...(data.moduleEntries || {}),
+    ...(data.researchEntries || {}),
+  };
+  moduleImages = data.moduleImages || {};
+}
+
 async function refreshSiteData() {
   if (isStaticMode) {
-    entryCounts = {};
-    customResearchTopics = [];
+    applyStaticSiteData(await loadStaticSiteData());
     return;
   }
 
@@ -158,12 +193,12 @@ async function refreshSiteData() {
     customResearchTopics = data.customResearchTopics || [];
   } catch (_error) {
     isStaticMode = true;
-    entryCounts = {};
-    customResearchTopics = [];
+    applyStaticSiteData(await loadStaticSiteData());
   }
 }
 
 function updateAuthButton() {
+  document.body.classList.toggle("static-mode", isStaticMode);
   authButton.hidden = isStaticMode;
   addResearchBtn.hidden = isStaticMode;
   authButton.textContent = isAuthenticated ? "退出" : "登录";
@@ -193,6 +228,7 @@ async function checkAuth() {
   } catch (_error) {
     isStaticMode = true;
     isAuthenticated = false;
+    applyStaticSiteData(await loadStaticSiteData());
   }
 
   updateAuthButton();
@@ -242,7 +278,11 @@ async function loadEntriesForActiveModule() {
   }
 
   if (isStaticMode) {
-    return [];
+    if (activeModule.scope === "research") {
+      return staticSiteData?.researchEntries?.[activeModule.number] || [];
+    }
+
+    return staticSiteData?.moduleEntries?.[activeModule.number] || [];
   }
 
   try {
@@ -258,8 +298,9 @@ async function loadEntriesForActiveModule() {
 
 function renderEntriesList(entries) {
   if (entries.length === 0) {
-    editorEntries.innerHTML =
-      '<p class="editor-empty">还没有记录。写下第一条观察吧。</p>';
+    editorEntries.innerHTML = isStaticMode
+      ? '<p class="editor-empty">这里暂时还没有公开记录。</p>'
+      : '<p class="editor-empty">还没有记录。写下第一条观察吧。</p>';
     return;
   }
 
@@ -292,8 +333,12 @@ function renderEntriesList(entries) {
       const text = document.createElement("p");
       text.textContent = entry.text;
 
-      actions.append(editButton, deleteButton);
-      meta.append(time, actions);
+      if (!isStaticMode) {
+        actions.append(editButton, deleteButton);
+        meta.append(time, actions);
+      } else {
+        meta.append(time);
+      }
       article.append(meta, text);
       return article.outerHTML;
     })
@@ -311,7 +356,7 @@ function renderImageGallery(images) {
       (image) => `
         <figure class="editor-image-item">
           <img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.originalName || "uploaded image")}" />
-          <button type="button" class="editor-delete" data-image-id="${image.id}">删除</button>
+          ${isStaticMode ? "" : `<button type="button" class="editor-delete" data-image-id="${image.id}">删除</button>`}
         </figure>
       `,
     )
@@ -320,7 +365,9 @@ function renderImageGallery(images) {
 
 async function loadModuleImages(moduleId) {
   if (isStaticMode || !IMAGE_MODULES.has(moduleId)) {
-    return [];
+    const images = staticSiteData?.moduleImages?.[moduleId] || [];
+    moduleImages[moduleId] = images;
+    return images;
   }
 
   try {
@@ -395,6 +442,15 @@ function updateModuleBadges() {
       preview.innerHTML = renderModuleCardPreview(number);
       preview.hidden = !preview.innerHTML;
     }
+
+    const hint = card.querySelector(".module-hint");
+    if (hint) {
+      hint.textContent = isStaticMode
+        ? count > 0
+          ? "查看公开记录"
+          : "暂无公开记录"
+        : "点击开始记录";
+    }
   });
 }
 
@@ -406,6 +462,11 @@ function renderNowSection() {
       const latestPreview = latest
         ? `<p class="research-latest">${escapeHtml(latest.text)}</p>`
         : "";
+      const hintText = isStaticMode
+        ? count > 0
+          ? "查看公开记录"
+          : "暂无公开记录"
+        : "点击记录观察";
       const deleteButton =
         isAuthenticated && !topic.builtIn
           ? `<button type="button" class="research-delete" data-research-delete="${escapeHtml(topic.id)}">删除主题</button>`
@@ -426,7 +487,7 @@ function renderNowSection() {
           <h3>${escapeHtml(topic.title)}</h3>
           <p class="research-description">${escapeHtml(topic.description)}</p>
           ${latestPreview}
-          <p class="research-hint">点击记录观察</p>
+          <p class="research-hint">${hintText}</p>
           ${count > 0 ? `<span class="research-entry-count">${count} 条记录</span>` : ""}
         </article>
       `;
@@ -455,6 +516,11 @@ async function preloadResearchPreviews() {
 }
 
 async function preloadModuleImages() {
+  if (isStaticMode) {
+    moduleImages = staticSiteData?.moduleImages || {};
+    return;
+  }
+
   await Promise.all(
     modules
       .filter((item) => item.allowsImages)
